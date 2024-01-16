@@ -1,5 +1,8 @@
 package draylar.tiered.mixin.client;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Multimap;
 import draylar.tiered.Tiered;
@@ -41,6 +44,7 @@ import java.util.Map;
 @Environment(EnvType.CLIENT)
 @Mixin(ItemStack.class)
 public abstract class ItemStackClientMixin {
+    private static final Logger logger = LoggerFactory.getLogger(ItemStackClientMixin.class);
 
     @Shadow
     public abstract NbtCompound getOrCreateSubNbt(String key);
@@ -199,10 +203,15 @@ public abstract class ItemStackClientMixin {
     @Inject(method = "getTooltip", at = @At(value = "INVOKE_ASSIGN", target = "Lnet/minecraft/item/ItemStack;getAttributeModifiers(Lnet/minecraft/entity/EquipmentSlot;)Lcom/google/common/collect/Multimap;"), locals = LocalCapture.CAPTURE_FAILSOFT)
     private void getTooltipMix(PlayerEntity player, TooltipContext context, CallbackInfoReturnable<List<Text>> info, List list, MutableText mutableText, int i, EquipmentSlot var6[], int var7,
             int var8, EquipmentSlot equipmentSlot, Multimap multimap) {
-        if (this.isTiered && !multimap.isEmpty() && equipmentSlot == EquipmentSlot.OFFHAND && this.getAttributeModifiers(EquipmentSlot.MAINHAND) != null
-                && !this.getAttributeModifiers(EquipmentSlot.MAINHAND).isEmpty()) {
-            multimap.clear();
-        }
+
+            if (this.isTiered && !multimap.isEmpty() && equipmentSlot == EquipmentSlot.OFFHAND && this.getAttributeModifiers(EquipmentSlot.MAINHAND) != null
+                    && !this.getAttributeModifiers(EquipmentSlot.MAINHAND).isEmpty()) {
+                try {
+                    multimap.clear();
+                } catch (Exception e) {
+                    logger.warn(String.format("Failed to clear multimap with content %s\nReason: %s", multimap, e.getMessage()));
+                }
+            }
     }
 
     // this has require = 0!
